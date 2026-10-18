@@ -30,7 +30,7 @@
     "id": "dravenspire"
   },
   {
-    "approx": true,
+    "approx": false,
     "kind": "visited",
     "name": "Orville's Floating Tower",
     "notes": "The party's base. Four hours west of the Dawn Order camp. Archmage Orville Thorne was an Aethrin, and Varmix the pseudodragon now keeps house.\n\nExits:\n\u2022 the invisible staircase (no password)\n\u2022 the face-guarded door to the Rookery's Vault of Requisitions in Galdoria (password: gazpacho)\n\u2022 Charles's portal to New Verdan\n\nThe sentient pen (Sins) was found here, along with the Amulet of Kasaris and a lot of loot.",
@@ -90,7 +90,7 @@
     "id": "underdark"
   },
   {
-    "approx": true,
+    "approx": false,
     "kind": "visited",
     "name": "Vedantian Relic Clearing",
     "notes": "A glowing clearing with waterfalls along the Silverstream River. It holds an ancient circular sigil, one of the arcane batteries that kept cities aloft before the Great Fall. Nobody knows whether it still works.\n\nVrae and Windrel met Benny Rambato and Tongsa of the Rainbow Group here.",

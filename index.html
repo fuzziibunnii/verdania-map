@@ -30,6 +30,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
 h1{font-family:var(--f-display);font-weight:400;font-size:clamp(1.6rem,3vw,2.2rem);margin:0;letter-spacing:.02em;text-wrap:balance}
 .sub{color:var(--muted);margin:2px 0 0;font-size:.95rem}
+.back{display:inline-block;font-size:.88rem;font-weight:500;color:var(--accent);text-decoration:none;margin-bottom:4px}
+.back:hover,.back:focus-visible{text-decoration:underline}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
 @media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}}
 
@@ -46,13 +48,17 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .zoom button{border-radius:0;min-width:38px;justify-content:center}
 .zoom button:first-child{border-radius:8px 0 0 8px}
 .zoom button:last-child{border-radius:0 8px 8px 0;border-left:0}
+.zoom #zoomIn{border-radius:0;border-left:0}
 .zoom span{border-block:1px solid var(--line);padding:7px 10px;font-size:.85rem;background:var(--panel);font-variant-numeric:tabular-nums;border-left:1px solid var(--line)}
 
 /* map */
 .mapcol{display:flex;flex-direction:column;gap:10px;min-width:0}
 .hint{background:var(--accent-soft);color:var(--ink);border-radius:8px;padding:8px 12px;font-size:.92rem;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.viewport{position:relative;overflow:auto;border-radius:10px;border:1px solid var(--line);background:#d9cfbd;box-shadow:var(--shadow);max-height:82vh;-webkit-overflow-scrolling:touch}
-.stage{position:relative;width:100%;transition:width .2s ease}
+.viewport{position:relative;overflow:auto;border-radius:10px;border:1px solid var(--line);background:#d9cfbd;box-shadow:var(--shadow);max-height:82vh;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overscroll-behavior:contain}
+.viewport.zoomed{cursor:grab}
+.viewport.dragging{cursor:grabbing;user-select:none}
+.viewport.dragging .pin{pointer-events:none}
+.stage{position:relative;width:100%}
 .stage img{display:block;width:100%;max-width:none;height:auto;user-select:none;-webkit-user-drag:none}
 .stage.placing{cursor:crosshair}
 .pin{position:absolute;transform:translate(-50%,-100%);background:none;border:0;padding:0;cursor:pointer;border-radius:0;display:block;line-height:0}
@@ -96,6 +102,7 @@ textarea{min-height:140px;resize:vertical}
 <div class="wrap">
   <header>
     <div>
+      <a class="back" href="https://fuzziibunnii.notion.site/Echoes-of-Verdania-Campaign-Hub-3f8b4307359381deb109f8138d285f1e" target="_blank" rel="noopener">← Echoes of Verdania Campaign Hub</a>
       <h1>Verdania Story Map</h1>
       <p class="sub">Echoes of Verdania · where the party has been, and where the leads point</p>
     </div>
@@ -105,6 +112,7 @@ textarea{min-height:140px;resize:vertical}
         <button id="zoomOut" type="button" aria-label="Zoom out">−</button>
         <span id="zoomLabel">100%</span>
         <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
+        <button id="zoomFit" type="button" aria-label="Fit the whole map">Fit</button>
       </div>
     </div>
   </header>
@@ -119,7 +127,7 @@ textarea{min-height:140px;resize:vertical}
         </div>
       </div>
       <div class="legend" id="legend"></div>
-      <p class="foot" id="foot">Snapshot of the live map. Dashed pins mark approximate spots. Places the map doesn't name yet are placed by best guess, so move them wherever the GM puts them.</p>
+      <p class="foot" id="foot">Pinch, or hold ⌘ or Ctrl and scroll, to zoom. Double-click to zoom in, and drag to move around. Snapshot of the live map. Dashed pins mark approximate spots. Places the map doesn't name yet are placed by best guess, so move them wherever the GM puts them.</p>
     </div>
 
     <aside class="rail" aria-label="Pins">
@@ -144,8 +152,9 @@ const $ = id => document.getElementById(id);
 const el = (tag, props={}, kids=[]) => { const e=document.createElement(tag); for(const k in props){ if(k==="class") e.className=props[k]; else if(k==="text") e.textContent=props[k]; else if(k.startsWith("on")) e.addEventListener(k.slice(2),props[k]); else e.setAttribute(k,props[k]); } for(const c of [].concat(kids)) if(c) e.append(c); return e; };
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
-S.pins=[{"approx": true, "kind": "visited", "name": "Dawn Order Camp", "notes": "Camp of the Dawn Order knights (the Ravens) in the Whispering Wood: Knight Commander Rain and Marcus the Strong.\n\nThe night of Duarte's moon lantern ceremony. Watches and stories were shared, and Uther vanished before morning, presumably heading for Nixthara.", "order": 3, "x": 73.4, "y": 61.6, "id": "dawn-order-camp"}, {"approx": true, "kind": "visited", "name": "Vedantian Relic Clearing", "notes": "A glowing clearing with waterfalls along the Silverstream River. It holds an ancient circular sigil, one of the arcane batteries that kept cities aloft before the Great Fall. Nobody knows whether it still works.\n\nVrae and Windrel met Benny Rambato and Tongsa of the Rainbow Group here.", "order": 5, "x": 66.9, "y": 64.6, "id": "vedantian-relic"}, {"approx": false, "kind": "lead", "name": "Bellheim", "notes": "A hard-to-find town in the Meridenour region of Koltan where the Rainbow Group formed. Evadne promised Benny she would visit someday and play Rockfinger's lute there once in his memory.\n\nBenny's directions: \"Be who you are.\"", "order": 10, "x": 62.5, "y": 44.5, "id": "bellheim"}, {"approx": false, "kind": "lead", "name": "Dravenspire", "notes": "Uther planned to charter a skyship here before heading on to Nixthara.\n\nWindrel saw a raven flying north toward Dravenspire. It stirred an unexplained memory and worry about Ashok.", "order": 9, "x": 35.3, "y": 46.2, "id": "dravenspire"}, {"approx": true, "kind": "visited", "name": "The Underdark Descent", "notes": "Old Shadow Wars battlefield beneath the crater. Here the party:\n\u2022 fought the boneless undead\n\u2022 drove off the Oculi, a mass of ~50 floating eyes\n\u2022 found the ritual chamber with the black portal (\"the quickest way is through\")\n\u2022 freed and questioned the drow Uther Kirocathis (Golgothrak, Mantis Beatrix, Morithol)\n\u2022 lost a commoner and a noble to the Vorlith on the collapsing bridge\n\u2022 escaped past an ancient black dragon, possibly undead", "order": 2, "x": 71.2, "y": 69.4, "id": "underdark"}, {"approx": false, "kind": "lead", "name": "Galdoria", "notes": "Coastal city in Aurion and home of the Rookery. Orville despised the Rookery, and it may be powered by a demon living beneath its tower. The tower's gazpacho door leads to the Rookery's Vault of Requisitions here.\n\nThe orc horde was last seen marching toward Galdoria.\n\nErrand: deliver Marcus's satchel to Penelope at the Sanguine Reliquary in the slums.", "order": 7, "x": 73.6, "y": 71.3, "id": "galdoria"}, {"approx": false, "kind": "lead", "name": "New Verdan", "notes": "Reachable through the tower portal guarded by the spirit Charles. Orville had contacts here among the great council of seven.", "order": 8, "x": 35.4, "y": 72.4, "id": "new-verdan"}, {"approx": true, "kind": "visited", "name": "Shadowfen Keep", "notes": "An ancient, dilapidated keep from the War of Shadows, near the edge of Old Verdantia and the Whispering Wood. You enter through a cave with a glowing green archway, and a ley line river runs through it. The Battle of Shadowfen Keep was also fought here during the First Korithic War.\n\nThe party freed the Wynvale prisoners and hid them nearby. Vrae charged the Stone in the river and lost 16 max HP for it. Marquis Harold Hale Von Corvus threw himself into the ley line, and the drow inquisitor escaped with the second Stone.\n\nStill unexplored: the door by the river, the north pit and stone door, and the green archway.\n\nThe party is here now.", "order": 6, "x": 60.2, "y": 65.2, "id": "shadowfen-keep"}, {"approx": true, "kind": "visited", "name": "Orville's Floating Tower", "notes": "The party's base. Four hours west of the Dawn Order camp. Archmage Orville Thorne was an Aethrin, and Varmix the pseudodragon now keeps house.\n\nExits:\n\u2022 the invisible staircase (no password)\n\u2022 the face-guarded door to the Rookery's Vault of Requisitions in Galdoria (password: gazpacho)\n\u2022 Charles's portal to New Verdan\n\nThe sentient pen (Sins) was found here, along with the Amulet of Kasaris and a lot of loot.", "order": 4, "x": 66.52, "y": 67.55, "id": "floating-tower"}, {"approx": false, "kind": "visited", "name": "Silver Petal Hall, Wynvale", "notes": "Where it all began (the session notes spell the city Windvale). The party was inspecting three ancient artifacts, including the Stone of Gog, when an explosion destroyed the display case and the artifacts fell into a crater leading to the Underdark. At the same moment, orcs and masked men attacked the city. The orc army's insignia is a dagger through a snake. Survivors were taken to Shadowfen Keep.\n\nBook joined the party here. The merchant Finkel Beans is also from Wynvale.", "order": 1, "x": 68.6, "y": 67.2, "id": "silver-petal-hall"}]; S.canWrite=false; S.loaded=true;
-try{ const z=parseFloat(localStorage.getItem("vz")); if(z>=1&&z<=3) S.zoom=z; }catch(e){}
+const ZMIN=1, ZMAX=4;
+S.pins=[{"approx": true, "kind": "visited", "name": "Dawn Order Camp", "notes": "Camp of the Dawn Order knights (the Ravens) in the Whispering Wood: Knight Commander Rain and Marcus the Strong.\n\nThe night of Duarte's moon lantern ceremony. Watches and stories were shared, and Uther vanished before morning, presumably heading for Nixthara.", "order": 3, "x": 73.4, "y": 61.6, "id": "dawn-order-camp"}, {"approx": false, "kind": "visited", "name": "Vedantian Relic Clearing", "notes": "A glowing clearing with waterfalls along the Silverstream River. It holds an ancient circular sigil, one of the arcane batteries that kept cities aloft before the Great Fall. Nobody knows whether it still works.\n\nVrae and Windrel met Benny Rambato and Tongsa of the Rainbow Group here.", "order": 5, "x": 66.9, "y": 64.6, "id": "vedantian-relic"}, {"approx": false, "kind": "lead", "name": "Bellheim", "notes": "A hard-to-find town in the Meridenour region of Koltan where the Rainbow Group formed. Evadne promised Benny she would visit someday and play Rockfinger's lute there once in his memory.\n\nBenny's directions: \"Be who you are.\"", "order": 10, "x": 62.5, "y": 44.5, "id": "bellheim"}, {"approx": false, "kind": "lead", "name": "Dravenspire", "notes": "Uther planned to charter a skyship here before heading on to Nixthara.\n\nWindrel saw a raven flying north toward Dravenspire. It stirred an unexplained memory and worry about Ashok.", "order": 9, "x": 35.3, "y": 46.2, "id": "dravenspire"}, {"approx": true, "kind": "visited", "name": "The Underdark Descent", "notes": "Old Shadow Wars battlefield beneath the crater. Here the party:\n\u2022 fought the boneless undead\n\u2022 drove off the Oculi, a mass of ~50 floating eyes\n\u2022 found the ritual chamber with the black portal (\"the quickest way is through\")\n\u2022 freed and questioned the drow Uther Kirocathis (Golgothrak, Mantis Beatrix, Morithol)\n\u2022 lost a commoner and a noble to the Vorlith on the collapsing bridge\n\u2022 escaped past an ancient black dragon, possibly undead", "order": 2, "x": 71.2, "y": 69.4, "id": "underdark"}, {"approx": false, "kind": "lead", "name": "Galdoria", "notes": "Coastal city in Aurion and home of the Rookery. Orville despised the Rookery, and it may be powered by a demon living beneath its tower. The tower's gazpacho door leads to the Rookery's Vault of Requisitions here.\n\nThe orc horde was last seen marching toward Galdoria.\n\nErrand: deliver Marcus's satchel to Penelope at the Sanguine Reliquary in the slums.", "order": 7, "x": 73.6, "y": 71.3, "id": "galdoria"}, {"approx": false, "kind": "lead", "name": "New Verdan", "notes": "Reachable through the tower portal guarded by the spirit Charles. Orville had contacts here among the great council of seven.", "order": 8, "x": 35.4, "y": 72.4, "id": "new-verdan"}, {"approx": true, "kind": "visited", "name": "Shadowfen Keep", "notes": "An ancient, dilapidated keep from the War of Shadows, near the edge of Old Verdantia and the Whispering Wood. You enter through a cave with a glowing green archway, and a ley line river runs through it. The Battle of Shadowfen Keep was also fought here during the First Korithic War.\n\nThe party freed the Wynvale prisoners and hid them nearby. Vrae charged the Stone in the river and lost 16 max HP for it. Marquis Harold Hale Von Corvus threw himself into the ley line, and the drow inquisitor escaped with the second Stone.\n\nStill unexplored: the door by the river, the north pit and stone door, and the green archway.\n\nThe party is here now.", "order": 6, "x": 60.2, "y": 65.2, "id": "shadowfen-keep"}, {"approx": false, "kind": "visited", "name": "Orville's Floating Tower", "notes": "The party's base. Four hours west of the Dawn Order camp. Archmage Orville Thorne was an Aethrin, and Varmix the pseudodragon now keeps house.\n\nExits:\n\u2022 the invisible staircase (no password)\n\u2022 the face-guarded door to the Rookery's Vault of Requisitions in Galdoria (password: gazpacho)\n\u2022 Charles's portal to New Verdan\n\nThe sentient pen (Sins) was found here, along with the Amulet of Kasaris and a lot of loot.", "order": 4, "x": 66.52, "y": 67.55, "id": "floating-tower"}, {"approx": false, "kind": "visited", "name": "Silver Petal Hall, Wynvale", "notes": "Where it all began (the session notes spell the city Windvale). The party was inspecting three ancient artifacts, including the Stone of Gog, when an explosion destroyed the display case and the artifacts fell into a crater leading to the Underdark. At the same moment, orcs and masked men attacked the city. The orc army's insignia is a dagger through a snake. Survivors were taken to Shadowfen Keep.\n\nBook joined the party here. The merchant Finkel Beans is also from Wynvale.", "order": 1, "x": 68.6, "y": 67.2, "id": "silver-petal-hall"}]; S.canWrite=false; S.loaded=true;
+try{ const z=parseFloat(localStorage.getItem("vz")); if(z>=ZMIN&&z<=ZMAX) S.zoom=z; }catch(e){}
 
 function pinSVG(kind, approx){
   const c = cssVar(KINDS[kind]?.color || "--note");
@@ -243,8 +252,8 @@ function editor(p){
 }
 
 function render(){
-  const st=$("stage"); st.style.width=(S.zoom*100)+"%"; st.classList.toggle("placing", S.mode!=="view");
-  $("zoomLabel").textContent=Math.round(S.zoom*100)+"%";
+  $("stage").classList.toggle("placing", S.mode!=="view");
+  applyZoom();
   $("addBtn").setAttribute("aria-pressed", String(S.mode==="add"));
   $("addBtn").hidden=!S.canWrite;
   const h=$("hint"); h.hidden = S.mode==="view";
@@ -266,15 +275,75 @@ function cancelEdit(){ S.editing=false; S.msg=""; if(S.draft){ S.draft=null; } r
 
 $("addBtn").onclick=()=>setMode(S.mode==="add"?"view":"add");
 $("cancelMode").onclick=()=>setMode("view");
-$("zoomIn").onclick=()=>zoom(.5); $("zoomOut").onclick=()=>zoom(-.5);
-function zoom(d){
-  const v=$("viewport"); const cx=(v.scrollLeft+v.clientWidth/2)/v.scrollWidth, cy=(v.scrollTop+v.clientHeight/2)/v.scrollHeight;
-  S.zoom=Math.min(3,Math.max(1,S.zoom+d)); try{localStorage.setItem("vz",S.zoom);}catch(e){}
-  render(); v.scrollLeft=cx*v.scrollWidth-v.clientWidth/2; v.scrollTop=cy*v.scrollHeight-v.clientHeight/2;
+/* ---- zoom & pan ---- */
+const VP=$("viewport"), ST=$("stage");
+function applyZoom(){
+  ST.style.width=(S.zoom*100)+"%";
+  $("zoomLabel").textContent=Math.round(S.zoom*100)+"%";
+  VP.classList.toggle("zoomed", S.zoom>ZMIN+.001);
+  $("zoomOut").disabled=S.zoom<=ZMIN+.001; $("zoomIn").disabled=S.zoom>=ZMAX-.001; $("zoomFit").disabled=S.zoom<=ZMIN+.001;
 }
+let zSave;
+function setZoom(z, cx, cy){
+  z=Math.min(ZMAX,Math.max(ZMIN,z));
+  if(Math.abs(z-S.zoom)<1e-4) return;
+  const vr=VP.getBoundingClientRect(), sr=ST.getBoundingClientRect();
+  if(cx==null){ cx=vr.left+VP.clientWidth/2; cy=vr.top+VP.clientHeight/2; }
+  const fx=(cx-sr.left)/sr.width, fy=(cy-sr.top)/sr.height;
+  S.zoom=z; applyZoom();
+  VP.scrollLeft=fx*ST.offsetWidth-(cx-vr.left);
+  VP.scrollTop=fy*ST.offsetHeight-(cy-vr.top);
+  clearTimeout(zSave); zSave=setTimeout(()=>{ try{localStorage.setItem("vz",S.zoom);}catch(e){} },300);
+}
+$("zoomIn").onclick=()=>setZoom(S.zoom*1.5);
+$("zoomOut").onclick=()=>setZoom(S.zoom/1.5);
+$("zoomFit").onclick=()=>setZoom(ZMIN);
+// trackpad pinch (Chrome, Edge, Firefox) and Ctrl/Cmd + scroll wheel
+VP.addEventListener("wheel",e=>{
+  if(!(e.ctrlKey||e.metaKey)) return;
+  e.preventDefault();
+  let dy=e.deltaMode===1 ? e.deltaY*40 : e.deltaY;
+  dy=Math.max(-50,Math.min(50,dy));
+  setZoom(S.zoom*Math.exp(-dy*0.004), e.clientX, e.clientY);
+},{passive:false});
+// two-finger pinch on phones and tablets
+let pinch=null;
+const tdist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+VP.addEventListener("touchstart",e=>{ if(e.touches.length===2){ pinch={d:tdist(e.touches[0],e.touches[1]), z:S.zoom}; } },{passive:true});
+VP.addEventListener("touchmove",e=>{
+  if(e.touches.length!==2||!pinch) return;
+  e.preventDefault();
+  const [a,b]=e.touches;
+  setZoom(pinch.z*tdist(a,b)/pinch.d,(a.clientX+b.clientX)/2,(a.clientY+b.clientY)/2);
+},{passive:false});
+VP.addEventListener("touchend",e=>{ if(e.touches.length<2) pinch=null; });
+// Safari trackpad pinch
+let gz=null;
+VP.addEventListener("gesturestart",e=>{ e.preventDefault(); gz=S.zoom; });
+VP.addEventListener("gesturechange",e=>{ e.preventDefault(); if(pinch||gz==null) return; setZoom(gz*e.scale,e.clientX,e.clientY); });
+VP.addEventListener("gestureend",e=>{ e.preventDefault(); gz=null; });
+// drag to pan with a mouse when zoomed in
+let drag=null, dragged=false;
+VP.addEventListener("pointerdown",e=>{
+  if(e.pointerType!=="mouse"||e.button!==0||S.zoom<=ZMIN+.001||e.target.closest(".pin")) return;
+  drag={x:e.clientX,y:e.clientY,l:VP.scrollLeft,t:VP.scrollTop}; dragged=false;
+});
+window.addEventListener("pointermove",e=>{
+  if(!drag) return;
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+  if(!dragged && Math.hypot(dx,dy)<4) return;
+  dragged=true; VP.classList.add("dragging");
+  VP.scrollLeft=drag.l-dx; VP.scrollTop=drag.t-dy;
+});
+window.addEventListener("pointerup",()=>{ if(!drag) return; drag=null; VP.classList.remove("dragging"); setTimeout(()=>{dragged=false;},0); });
+// double-click zooms in on that spot; at full zoom it fits the map again
+ST.addEventListener("dblclick",e=>{
+  if(S.mode!=="view"||e.target.closest(".pin")) return;
+  setZoom(S.zoom>=ZMAX-.001 ? ZMIN : S.zoom*2, e.clientX, e.clientY);
+});
 
 $("stage").addEventListener("click", e=>{
-  if(S.mode==="view") return;
+  if(S.mode==="view"||dragged) return;
   const r=$("stage").getBoundingClientRect();
   const x=+((e.clientX-r.left)/r.width*100).toFixed(2), y=+((e.clientY-r.top)/r.height*100).toFixed(2);
   if(S.mode==="add"){
