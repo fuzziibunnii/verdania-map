@@ -15,6 +15,7 @@
     "name": "Dawn Order Camp",
     "notes": "Camp of the Dawn Order knights (the Ravens) in the Whispering Wood: Knight Commander Rain and Marcus the Strong.\n\nThe night of Duarte's moon lantern ceremony. Watches and stories were shared, and Uther vanished before morning, presumably heading for Nixthara.",
     "order": 3,
+    "step": 3,
     "x": 73.4,
     "y": 61.6,
     "id": "dawn-order-camp"
@@ -35,6 +36,7 @@
     "name": "Orville's Floating Tower",
     "notes": "The party's base. Four hours west of the Dawn Order camp. Archmage Orville Thorne was an Aethrin, and Varmix the pseudodragon now keeps house.\n\nExits:\n\u2022 the invisible staircase (no password)\n\u2022 the face-guarded door to the Rookery's Vault of Requisitions in Galdoria (password: gazpacho)\n\u2022 Charles's portal to New Verdan\n\nThe sentient pen (Sins) was found here, along with the Amulet of Kasaris and a lot of loot.",
     "order": 4,
+    "step": 4,
     "x": 66.52,
     "y": 67.55,
     "id": "floating-tower"
@@ -65,6 +67,7 @@
     "name": "Shadowfen Keep",
     "notes": "An ancient, dilapidated keep from the War of Shadows, near the edge of Old Verdantia and the Whispering Wood. You enter through a cave with a glowing green archway, and a ley line river runs through it. The Battle of Shadowfen Keep was also fought here during the First Korithic War.\n\nThe party freed the Wynvale prisoners and hid them nearby. Vrae charged the Stone in the river and lost 16 max HP for it. Marquis Harold Hale Von Corvus threw himself into the ley line, and the drow inquisitor escaped with the second Stone.\n\nStill unexplored: the door by the river, the north pit and stone door, and the green archway.\n\nThe party is here now.",
     "order": 6,
+    "step": 6,
     "x": 60.2,
     "y": 65.2,
     "id": "shadowfen-keep"
@@ -75,6 +78,7 @@
     "name": "Silver Petal Hall, Wynvale",
     "notes": "Where it all began (the session notes spell the city Windvale). The party was inspecting three ancient artifacts, including the Stone of Gog, when an explosion destroyed the display case and the artifacts fell into a crater leading to the Underdark. At the same moment, orcs and masked men attacked the city. The orc army's insignia is a dagger through a snake. Survivors were taken to Shadowfen Keep.\n\nBook joined the party here. The merchant Finkel Beans is also from Wynvale.",
     "order": 1,
+    "step": 1,
     "x": 68.6,
     "y": 67.2,
     "id": "silver-petal-hall"
@@ -85,6 +89,7 @@
     "name": "The Underdark Descent",
     "notes": "Old Shadow Wars battlefield beneath the crater. Here the party:\n\u2022 fought the boneless undead\n\u2022 drove off the Oculi, a mass of ~50 floating eyes\n\u2022 found the ritual chamber with the black portal (\"the quickest way is through\")\n\u2022 freed and questioned the drow Uther Kirocathis (Golgothrak, Mantis Beatrix, Morithol)\n\u2022 lost a commoner and a noble to the Vorlith on the collapsing bridge\n\u2022 escaped past an ancient black dragon, possibly undead",
     "order": 2,
+    "step": 2,
     "x": 71.2,
     "y": 69.4,
     "id": "underdark"
@@ -95,6 +100,7 @@
     "name": "Vedantian Relic Clearing",
     "notes": "A glowing clearing with waterfalls along the Silverstream River. It holds an ancient circular sigil, one of the arcane batteries that kept cities aloft before the Great Fall. Nobody knows whether it still works.\n\nVrae and Windrel met Benny Rambato and Tongsa of the Rainbow Group here.",
     "order": 5,
+    "step": 5,
     "x": 66.9,
     "y": 64.6,
     "id": "vedantian-relic"

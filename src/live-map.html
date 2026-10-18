@@ -67,6 +67,13 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .pin .tip{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);white-space:nowrap;background:var(--panel);color:var(--ink);font:500 .8rem/1.2 var(--f-body);padding:4px 8px;border-radius:6px;box-shadow:var(--shadow);pointer-events:none;opacity:0;transition:opacity .12s}
 .pin:hover .tip,.pin:focus-visible .tip,.pin.sel .tip{opacity:1}
 .pin.approx svg .ring{stroke-dasharray:3 2}
+.route{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.route .halo{fill:none;stroke:var(--panel);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.route .line{fill:none;stroke:var(--visited);stroke-width:3;stroke-dasharray:2 7;stroke-linecap:round;stroke-linejoin:round}
+.pin .step{position:absolute;top:-7px;right:-9px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--panel);color:var(--ink);border:1.5px solid var(--visited);font:700 .68rem/14px var(--f-body);text-align:center;font-variant-numeric:tabular-nums;pointer-events:none}
+.journey{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-left:auto}
+.journeycap{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--visited);font-weight:700}
+.legendrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .legend{display:flex;flex-wrap:wrap;gap:6px}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:.85rem;background:var(--panel);cursor:pointer;color:var(--ink)}
 .chip[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
@@ -123,10 +130,11 @@ textarea{min-height:140px;resize:vertical}
       <div class="viewport" id="viewport">
         <div class="stage" id="stage">
           <img id="map" src="verdania-map.jpg" alt="Map of the Meridian League showing Verdania, Aurion, Koltan, Dravenspire, Solaris, Thyrendor and the Empyreal Dominion" draggable="false">
+          <svg class="route" id="route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline class="halo" id="routeHalo" vector-effect="non-scaling-stroke" points=""/><polyline class="line" id="routeLine" vector-effect="non-scaling-stroke" points=""/></svg>
           <div id="pins"></div>
         </div>
       </div>
-      <div class="legend" id="legend"></div>
+      <div class="legendrow"><div class="legend" id="legend"></div><div class="journey"><button class="chip" id="routeBtn" type="button" aria-pressed="true">Route</button><button class="chip" id="replayBtn" type="button">▶ Replay journey</button></div></div>
       <p class="foot" id="foot">Pinch, or hold ⌘ or Ctrl and scroll, to zoom. Double-click to zoom in, and drag to move around. Dashed pins mark approximate spots. Places the map doesn't name yet are placed by best guess, so move them wherever the GM puts them.</p>
     </div>
 
@@ -147,7 +155,7 @@ const KINDS = {
   note:{label:"Note", color:"--note"}
 };
 const S = {pins:[], sel:null, mode:"view", draft:null, editing:false, confirmDel:false,
-  filter:{visited:true, lead:true, note:true}, zoom:1, db:null, canWrite:true, live:false, loaded:false, msg:""};
+  filter:{visited:true, lead:true, note:true}, showRoute:true, replay:null, zoom:1, db:null, canWrite:true, live:false, loaded:false, msg:""};
 const $ = id => document.getElementById(id);
 const el = (tag, props={}, kids=[]) => { const e=document.createElement(tag); for(const k in props){ if(k==="class") e.className=props[k]; else if(k==="text") e.textContent=props[k]; else if(k.startsWith("on")) e.addEventListener(k.slice(2),props[k]); else e.setAttribute(k,props[k]); } for(const c of [].concat(kids)) if(c) e.append(c); return e; };
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -175,9 +183,10 @@ function renderPins(){
   const all = S.draft ? [...S.pins.filter(p=>p.id!==S.draft.id), S.draft] : S.pins;
   for(const p of all){
     if(!S.filter[p.kind] && p!==S.draft) continue;
-    const b=el("button",{class:"pin"+(p.approx?" approx":"")+((S.sel===p.id||p===S.draft)?" sel":""), type:"button", "aria-label":p.name||"New pin", onclick:e=>{e.stopPropagation(); if(S.mode!=="view") return; select(p.id);}});
+    const b=el("button",{class:"pin"+(p.approx?" approx":"")+((S.sel===p.id||p===S.draft)?" sel":""), type:"button", "aria-label":p.name||"New pin", onclick:e=>{e.stopPropagation(); if(S.mode!=="view") return; stopReplay(); select(p.id);}});
     b.style.left=p.x+"%"; b.style.top=p.y+"%";
     b.append(pinSVG(p.kind,p.approx), el("span",{class:"tip",text:p.name||"New pin"}));
+    if(S.showRoute && Number(p.step)>0) b.append(el("span",{class:"step",text:String(p.step)}));
     box.append(b);
   }
 }
@@ -199,7 +208,7 @@ function renderList(){
     ol.append(el("li",{class:"group",text:KINDS[k].label}));
     for(const p of group){
       const dot=el("span",{class:"dot"}); dot.style.background=`var(${KINDS[k].color})`;
-      ol.append(el("li",{},el("button",{type:"button",class:S.sel===p.id?"sel":"",onclick:()=>select(p.id,true)},[dot, el("span",{text:p.name})])));
+      ol.append(el("li",{},el("button",{type:"button",class:S.sel===p.id?"sel":"",onclick:()=>{stopReplay(); select(p.id,true);}},[dot, el("span",{text:p.name})])));
     }
   }
 }
@@ -214,6 +223,7 @@ function renderDetail(){
     return;
   }
   if(S.editing){ d.append(editor(p)); return; }
+  if(S.replay){ const j=journey(); d.append(el("div",{class:"journeycap",text:`Journey · stop ${S.replay.i+1} of ${j.length}`})); }
   const dot=el("span",{class:"dot"}); dot.style.background=`var(${KINDS[p.kind]?.color||"--note"})`;
   d.append(el("div",{class:"kind"},[dot, el("span",{text:KINDS[p.kind]?.label||"Note"})]), el("h3",{text:p.name}));
   if(p.notes) d.append(el("p",{class:"notes",text:p.notes}));
@@ -239,11 +249,13 @@ function editor(p){
   const name=el("input",{type:"text",name:"name",id:"f-name",required:"",maxlength:"80",placeholder:"e.g. Shadowfen Keep"}); name.value=p.name||"";
   const notes=el("textarea",{name:"notes",id:"f-notes",placeholder:"What happened here, who the party met, what's still unresolved…"}); notes.value=p.notes||"";
   const ap=el("input",{type:"checkbox",name:"approx",id:"f-approx"}); ap.checked=!!p.approx;
+  const st=el("input",{type:"number",name:"step",id:"f-step",min:"1",step:"1",placeholder:"Not on the route"}); if(Number(p.step)>0) st.value=p.step;
   f.append(el("h2",{text:S.draft?"New pin":"Edit pin"}),
     el("label",{},[el("span",{text:"Name"}),name]),
     el("label",{},[el("span",{text:"Type"}),sel]),
     el("label",{},[el("span",{text:"Notes"}),notes]),
     el("label",{class:"check"},[ap, el("span",{text:"Approximate location"})]),
+    el("label",{},[el("span",{text:"Journey step (order the party got here; leave blank if not on the route)"}),st]),
     el("div",{class:"row"},[el("button",{type:"submit",class:"primary",text:"Save pin"}), el("button",{type:"button",onclick:cancelEdit,text:"Cancel"})]));
   if(S.msg) f.append(el("p",{class:"status",text:S.msg}));
   setTimeout(()=>name.focus(),0);
@@ -257,7 +269,10 @@ function render(){
   $("addBtn").hidden=!S.canWrite;
   const h=$("hint"); h.hidden = S.mode==="view";
   $("hintText").textContent = S.mode==="add" ? "Tap the map where the new pin goes." : S.mode==="move" ? "Tap the map at the pin's new spot." : "";
-  renderPins(); renderLegend(); renderList(); renderDetail();
+  renderPins(); renderRoute(); renderLegend(); renderList(); renderDetail();
+  $("routeBtn").setAttribute("aria-pressed", String(S.showRoute));
+  $("replayBtn").textContent = S.replay ? "■ Stop" : "▶ Replay journey";
+  $("replayBtn").disabled = journey().length<2;
 }
 
 function select(id, scroll){
@@ -274,6 +289,34 @@ function cancelEdit(){ S.editing=false; S.msg=""; if(S.draft){ S.draft=null; } r
 
 $("addBtn").onclick=()=>setMode(S.mode==="add"?"view":"add");
 $("cancelMode").onclick=()=>setMode("view");
+/* ---- journey route ---- */
+function journey(){ return S.pins.filter(p=>Number(p.step)>0).sort((a,b)=>a.step-b.step || String(a.name).localeCompare(b.name)); }
+function renderRoute(){
+  const j=journey(); let pts=j;
+  if(S.replay) pts=j.slice(0,S.replay.i+1);
+  const str=(S.showRoute||S.replay) && pts.length>1 ? pts.map(p=>`${p.x},${p.y}`).join(" ") : "";
+  $("routeLine").setAttribute("points",str); $("routeHalo").setAttribute("points",str);
+}
+$("routeBtn").onclick=()=>{ S.showRoute=!S.showRoute; render(); };
+function stopReplay(){ if(S.replay){ clearTimeout(S.replay.t); S.replay=null; render(); } }
+function replayStep(){
+  const j=journey(); if(!S.replay) return;
+  if(S.replay.i>=j.length){ stopReplay(); return; }
+  select(j[S.replay.i].id, true);
+  S.replay.t=setTimeout(()=>{ if(!S.replay) return; S.replay.i++; if(S.replay.i>=j.length){ stopReplay(); } else replayStep(); }, 3200);
+}
+$("replayBtn").onclick=()=>{
+  if(S.replay){ stopReplay(); return; }
+  if(journey().length<2) return;
+  S.mode="view"; S.draft=null; S.editing=false;
+  const j=journey(), xs=j.map(p=>p.x), ys=j.map(p=>p.y);
+  const spanX=Math.max(...xs)-Math.min(...xs), spanY=Math.max(...ys)-Math.min(...ys);
+  const fit=Math.min(ZMAX, Math.max(S.zoom, Math.min(100/(spanX+14), 100/(spanY+14))*0.9));
+  const sr=ST.getBoundingClientRect();
+  setZoom(fit, sr.left+sr.width*(Math.min(...xs)+spanX/2)/100, sr.top+sr.height*(Math.min(...ys)+spanY/2)/100);
+  S.replay={i:0,t:null}; replayStep();
+};
+
 /* ---- zoom & pan ---- */
 const VP=$("viewport"), ST=$("stage");
 function applyZoom(){
@@ -357,7 +400,7 @@ $("stage").addEventListener("click", e=>{
 
 function strip(p){ const {id,_new,...rest}=p; return rest; }
 async function savePin(p, fd){
-  const body={...strip(p), name:String(fd.get("name")).trim(), kind:fd.get("kind"), notes:String(fd.get("notes")).trim(), approx:fd.get("approx")==="on"};
+  const body={...strip(p), name:String(fd.get("name")).trim(), kind:fd.get("kind"), notes:String(fd.get("notes")).trim(), approx:fd.get("approx")==="on", step: Number(fd.get("step"))>0 ? Math.round(Number(fd.get("step"))) : null};
   if(!body.name){ S.msg="Give the pin a name first."; render(); return; }
   const id=p.id;
   if(!S.db){ const i=S.pins.findIndex(q=>q.id===id); const np={id,...body}; if(i>=0) S.pins[i]=np; else S.pins.push(np); }
