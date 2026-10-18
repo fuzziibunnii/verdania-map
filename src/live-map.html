@@ -1,0 +1,400 @@
+<title>Verdania Story Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout: the map is the page; a ledger rail on the right (stacked below on phones) lists pins and opens their story notes. */
+:root{
+  --bg:#ece6da; --panel:#f7f3ea; --ink:#2b2433; --muted:#6c6274; --line:#d6ccbb;
+  --accent:#6b3fa0; --accent-ink:#ffffff; --accent-soft:#e9def5;
+  --visited:#6b3fa0; --lead:#b7791f; --note:#1f7a74;
+  --danger:#a8323e; --shadow:0 1px 2px rgba(43,36,51,.12),0 6px 18px rgba(43,36,51,.10);
+  --f-display:"Marcellus SC","Trajan Pro",Georgia,serif;
+  --f-body:"Alegreya Sans","Gill Sans","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#17141d; --panel:#211c29; --ink:#ece6f4; --muted:#a59cb2; --line:#3a3245;
+  --accent:#b58cf0; --accent-ink:#1a1222; --accent-soft:#33264a;
+  --visited:#b58cf0; --lead:#e3a948; --note:#4fc2b8; --danger:#f07a85;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17141d; --panel:#211c29; --ink:#ece6f4; --muted:#a59cb2; --line:#3a3245;
+  --accent:#b58cf0; --accent-ink:#1a1222; --accent-soft:#33264a;
+  --visited:#b58cf0; --lead:#e3a948; --note:#4fc2b8; --danger:#f07a85;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 28px;max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(1.6rem,3vw,2.2rem);margin:0;letter-spacing:.02em;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;font-size:.95rem}
+.back{display:inline-block;font-size:.88rem;font-weight:500;color:var(--accent);text-decoration:none;margin-bottom:4px}
+.back:hover,.back:focus-visible{text-decoration:underline}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,.btn{font:inherit;font-size:.92rem;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.primary[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent-ink)}
+button.danger{color:var(--danger);border-color:var(--danger);background:transparent}
+button:disabled{opacity:.5;cursor:not-allowed}
+.zoom{display:inline-flex}
+.zoom button{border-radius:0;min-width:38px;justify-content:center}
+.zoom button:first-child{border-radius:8px 0 0 8px}
+.zoom button:last-child{border-radius:0 8px 8px 0;border-left:0}
+.zoom #zoomIn{border-radius:0;border-left:0}
+.zoom span{border-block:1px solid var(--line);padding:7px 10px;font-size:.85rem;background:var(--panel);font-variant-numeric:tabular-nums;border-left:1px solid var(--line)}
+
+/* map */
+.mapcol{display:flex;flex-direction:column;gap:10px;min-width:0}
+.hint{background:var(--accent-soft);color:var(--ink);border-radius:8px;padding:8px 12px;font-size:.92rem;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.viewport{position:relative;overflow:auto;border-radius:10px;border:1px solid var(--line);background:#d9cfbd;box-shadow:var(--shadow);max-height:82vh;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overscroll-behavior:contain}
+.viewport.zoomed{cursor:grab}
+.viewport.dragging{cursor:grabbing;user-select:none}
+.viewport.dragging .pin{pointer-events:none}
+.stage{position:relative;width:100%}
+.stage img{display:block;width:100%;max-width:none;height:auto;user-select:none;-webkit-user-drag:none}
+.stage.placing{cursor:crosshair}
+.pin{position:absolute;transform:translate(-50%,-100%);background:none;border:0;padding:0;cursor:pointer;border-radius:0;display:block;line-height:0}
+.pin svg{width:26px;height:34px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));transition:transform .15s ease}
+.pin:hover svg,.pin.sel svg{transform:scale(1.25);transform-origin:50% 100%}
+.pin .tip{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);white-space:nowrap;background:var(--panel);color:var(--ink);font:500 .8rem/1.2 var(--f-body);padding:4px 8px;border-radius:6px;box-shadow:var(--shadow);pointer-events:none;opacity:0;transition:opacity .12s}
+.pin:hover .tip,.pin:focus-visible .tip,.pin.sel .tip{opacity:1}
+.pin.approx svg .ring{stroke-dasharray:3 2}
+.legend{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:.85rem;background:var(--panel);cursor:pointer;color:var(--ink)}
+.chip[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.foot{color:var(--muted);font-size:.82rem}
+
+/* rail */
+.rail{background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.rail h2{font-family:var(--f-display);font-weight:400;font-size:1.15rem;margin:0;letter-spacing:.03em}
+.sec{padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sec+.sec{border-top:1px solid var(--line)}
+.detail .kind{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px}
+.detail h3{font-family:var(--f-display);font-weight:400;font-size:1.4rem;margin:0;line-height:1.2;text-wrap:balance}
+.detail p.notes{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.detail .approxnote{font-size:.85rem;color:var(--muted);font-style:italic;margin:0}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.empty{color:var(--muted);font-size:.92rem;margin:0}
+ol.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;max-height:48vh;overflow:auto}
+ol.list li button{width:100%;border:0;border-radius:6px;background:transparent;padding:7px 8px;text-align:left;justify-content:flex-start;gap:10px}
+ol.list li button:hover{background:var(--accent-soft)}
+ol.list li button.sel{background:var(--accent-soft);font-weight:700}
+.group{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:10px 8px 2px}
+form{display:flex;flex-direction:column;gap:10px}
+label{font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+label.check{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:.9rem}
+input[type=text],textarea,select{font:inherit;font-size:.95rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+textarea{min-height:140px;resize:vertical}
+.status{font-size:.82rem;color:var(--muted)}
+.confirm{background:var(--accent-soft);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;font-size:.9rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <a class="back" href="https://fuzziibunnii.notion.site/Echoes-of-Verdania-Campaign-Hub-3f8b4307359381deb109f8138d285f1e" target="_blank" rel="noopener">← Echoes of Verdania Campaign Hub</a>
+      <h1>Verdania Story Map</h1>
+      <p class="sub">Echoes of Verdania · where the party has been, and where the leads point</p>
+    </div>
+    <div class="toolbar">
+      <button id="addBtn" class="primary" aria-pressed="false" type="button">＋ Add pin</button>
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button id="zoomOut" type="button" aria-label="Zoom out">−</button>
+        <span id="zoomLabel">100%</span>
+        <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
+        <button id="zoomFit" type="button" aria-label="Fit the whole map">Fit</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="mapcol">
+      <div id="hint" class="hint" hidden><span id="hintText"></span><button id="cancelMode" type="button">Cancel</button></div>
+      <div class="viewport" id="viewport">
+        <div class="stage" id="stage">
+          <img id="map" src="verdania-map.jpg" alt="Map of the Meridian League showing Verdania, Aurion, Koltan, Dravenspire, Solaris, Thyrendor and the Empyreal Dominion" draggable="false">
+          <div id="pins"></div>
+        </div>
+      </div>
+      <div class="legend" id="legend"></div>
+      <p class="foot" id="foot">Pinch, or hold ⌘ or Ctrl and scroll, to zoom. Double-click to zoom in, and drag to move around. Dashed pins mark approximate spots. Places the map doesn't name yet are placed by best guess, so move them wherever the GM puts them.</p>
+    </div>
+
+    <aside class="rail" aria-label="Pins">
+      <div class="sec detail" id="detail"></div>
+      <div class="sec">
+        <h2>All pins</h2>
+        <ol class="list" id="list"></ol>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const KINDS = {
+  visited:{label:"Visited", color:"--visited"},
+  lead:{label:"Lead", color:"--lead"},
+  note:{label:"Note", color:"--note"}
+};
+const S = {pins:[], sel:null, mode:"view", draft:null, editing:false, confirmDel:false,
+  filter:{visited:true, lead:true, note:true}, zoom:1, db:null, canWrite:true, live:false, loaded:false, msg:""};
+const $ = id => document.getElementById(id);
+const el = (tag, props={}, kids=[]) => { const e=document.createElement(tag); for(const k in props){ if(k==="class") e.className=props[k]; else if(k==="text") e.textContent=props[k]; else if(k.startsWith("on")) e.addEventListener(k.slice(2),props[k]); else e.setAttribute(k,props[k]); } for(const c of [].concat(kids)) if(c) e.append(c); return e; };
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+const ZMIN=1, ZMAX=4;
+try{ const z=parseFloat(localStorage.getItem("vz")); if(z>=ZMIN&&z<=ZMAX) S.zoom=z; }catch(e){}
+
+function pinSVG(kind, approx){
+  const c = cssVar(KINDS[kind]?.color || "--note");
+  const ns="http://www.w3.org/2000/svg";
+  const s=document.createElementNS(ns,"svg"); s.setAttribute("viewBox","0 0 26 34"); s.setAttribute("aria-hidden","true");
+  const p=document.createElementNS(ns,"path");
+  p.setAttribute("d","M13 33C13 33 2 20.5 2 12.5A11 11 0 0 1 24 12.5C24 20.5 13 33 13 33Z");
+  p.setAttribute("fill",c); p.setAttribute("stroke","#fff"); p.setAttribute("stroke-width","1.6"); p.setAttribute("class","ring");
+  if(approx){ p.setAttribute("stroke-dasharray","3 2"); }
+  const d=document.createElementNS(ns,"circle"); d.setAttribute("cx","13"); d.setAttribute("cy","12.5"); d.setAttribute("r","4.2"); d.setAttribute("fill","#fff");
+  s.append(p,d); return s;
+}
+
+function sorted(){ return [...S.pins].sort((a,b)=>(a.order??1e15)-(b.order??1e15) || String(a.name).localeCompare(b.name)); }
+function current(){ return S.draft || S.pins.find(p=>p.id===S.sel) || null; }
+
+function renderPins(){
+  const box=$("pins"); box.replaceChildren();
+  const all = S.draft ? [...S.pins.filter(p=>p.id!==S.draft.id), S.draft] : S.pins;
+  for(const p of all){
+    if(!S.filter[p.kind] && p!==S.draft) continue;
+    const b=el("button",{class:"pin"+(p.approx?" approx":"")+((S.sel===p.id||p===S.draft)?" sel":""), type:"button", "aria-label":p.name||"New pin", onclick:e=>{e.stopPropagation(); if(S.mode!=="view") return; select(p.id);}});
+    b.style.left=p.x+"%"; b.style.top=p.y+"%";
+    b.append(pinSVG(p.kind,p.approx), el("span",{class:"tip",text:p.name||"New pin"}));
+    box.append(b);
+  }
+}
+
+function renderLegend(){
+  const lg=$("legend"); lg.replaceChildren();
+  for(const k in KINDS){
+    const n=S.pins.filter(p=>p.kind===k).length;
+    const dot=el("span",{class:"dot"}); dot.style.background=`var(${KINDS[k].color})`;
+    lg.append(el("button",{class:"chip",type:"button","aria-pressed":String(S.filter[k]),onclick:()=>{S.filter[k]=!S.filter[k]; render();}},[dot, el("span",{text:`${KINDS[k].label} · ${n}`})]));
+  }
+}
+
+function renderList(){
+  const ol=$("list"); ol.replaceChildren();
+  if(!S.pins.length){ ol.append(el("li",{class:"empty",text: S.loaded||!S.live ? "No pins yet. Use “Add pin” and tap the map to mark the first place." : "Loading pins…"})); return; }
+  for(const k in KINDS){
+    const group=sorted().filter(p=>p.kind===k && S.filter[k]); if(!group.length) continue;
+    ol.append(el("li",{class:"group",text:KINDS[k].label}));
+    for(const p of group){
+      const dot=el("span",{class:"dot"}); dot.style.background=`var(${KINDS[k].color})`;
+      ol.append(el("li",{},el("button",{type:"button",class:S.sel===p.id?"sel":"",onclick:()=>select(p.id,true)},[dot, el("span",{text:p.name})])));
+    }
+  }
+}
+
+function renderDetail(){
+  const d=$("detail"); d.replaceChildren();
+  const p=current();
+  if(!p){
+    d.append(el("h2",{text:"The Meridian League"}),
+      el("p",{class:"empty",text:"Pick a pin on the map or from the list to read what happened there."}));
+    if(!S.live) d.append(el("p",{class:"status",text:"Pins added in this view aren't saved. Open the published page to keep them."}));
+    return;
+  }
+  if(S.editing){ d.append(editor(p)); return; }
+  const dot=el("span",{class:"dot"}); dot.style.background=`var(${KINDS[p.kind]?.color||"--note"})`;
+  d.append(el("div",{class:"kind"},[dot, el("span",{text:KINDS[p.kind]?.label||"Note"})]), el("h3",{text:p.name}));
+  if(p.notes) d.append(el("p",{class:"notes",text:p.notes}));
+  if(p.approx) d.append(el("p",{class:"approxnote",text:"Approximate location. The map doesn't mark this spot yet."}));
+  if(S.canWrite){
+    const row=el("div",{class:"row"},[
+      el("button",{type:"button",onclick:()=>{S.editing=true; render();}, text:"Edit"}),
+      el("button",{type:"button",onclick:()=>setMode("move"), text:"Move pin"}),
+      el("button",{type:"button",class:"danger",onclick:()=>{S.confirmDel=true; render();}, text:"Delete"})
+    ]);
+    d.append(row);
+    if(S.confirmDel){
+      d.append(el("div",{class:"confirm"},[el("span",{text:`Delete “${p.name}”? This removes it for everyone.`}),
+        el("div",{class:"row"},[el("button",{type:"button",class:"danger",onclick:()=>removePin(p),text:"Delete pin"}), el("button",{type:"button",onclick:()=>{S.confirmDel=false;render();},text:"Keep it"})])]));
+    }
+  }
+  if(S.msg) d.append(el("p",{class:"status",text:S.msg}));
+}
+
+function editor(p){
+  const f=el("form",{onsubmit:e=>{e.preventDefault(); savePin(p, new FormData(f));}});
+  const sel=el("select",{name:"kind",id:"f-kind"}); for(const k in KINDS){ const o=el("option",{value:k,text:KINDS[k].label}); if(p.kind===k) o.selected=true; sel.append(o); }
+  const name=el("input",{type:"text",name:"name",id:"f-name",required:"",maxlength:"80",placeholder:"e.g. Shadowfen Keep"}); name.value=p.name||"";
+  const notes=el("textarea",{name:"notes",id:"f-notes",placeholder:"What happened here, who the party met, what's still unresolved…"}); notes.value=p.notes||"";
+  const ap=el("input",{type:"checkbox",name:"approx",id:"f-approx"}); ap.checked=!!p.approx;
+  f.append(el("h2",{text:S.draft?"New pin":"Edit pin"}),
+    el("label",{},[el("span",{text:"Name"}),name]),
+    el("label",{},[el("span",{text:"Type"}),sel]),
+    el("label",{},[el("span",{text:"Notes"}),notes]),
+    el("label",{class:"check"},[ap, el("span",{text:"Approximate location"})]),
+    el("div",{class:"row"},[el("button",{type:"submit",class:"primary",text:"Save pin"}), el("button",{type:"button",onclick:cancelEdit,text:"Cancel"})]));
+  if(S.msg) f.append(el("p",{class:"status",text:S.msg}));
+  setTimeout(()=>name.focus(),0);
+  return f;
+}
+
+function render(){
+  $("stage").classList.toggle("placing", S.mode!=="view");
+  applyZoom();
+  $("addBtn").setAttribute("aria-pressed", String(S.mode==="add"));
+  $("addBtn").hidden=!S.canWrite;
+  const h=$("hint"); h.hidden = S.mode==="view";
+  $("hintText").textContent = S.mode==="add" ? "Tap the map where the new pin goes." : S.mode==="move" ? "Tap the map at the pin's new spot." : "";
+  renderPins(); renderLegend(); renderList(); renderDetail();
+}
+
+function select(id, scroll){
+  S.sel=id; S.draft=null; S.editing=false; S.confirmDel=false; S.msg="";
+  render();
+  if(scroll){ const p=S.pins.find(x=>x.id===id); if(p) scrollToPin(p); }
+}
+function scrollToPin(p){
+  const v=$("viewport"), st=$("stage");
+  v.scrollTo({left: st.offsetWidth*p.x/100 - v.clientWidth/2, top: st.offsetHeight*p.y/100 - v.clientHeight/2, behavior:"smooth"});
+}
+function setMode(m){ S.mode=m; S.msg=""; render(); }
+function cancelEdit(){ S.editing=false; S.msg=""; if(S.draft){ S.draft=null; } render(); }
+
+$("addBtn").onclick=()=>setMode(S.mode==="add"?"view":"add");
+$("cancelMode").onclick=()=>setMode("view");
+/* ---- zoom & pan ---- */
+const VP=$("viewport"), ST=$("stage");
+function applyZoom(){
+  ST.style.width=(S.zoom*100)+"%";
+  $("zoomLabel").textContent=Math.round(S.zoom*100)+"%";
+  VP.classList.toggle("zoomed", S.zoom>ZMIN+.001);
+  $("zoomOut").disabled=S.zoom<=ZMIN+.001; $("zoomIn").disabled=S.zoom>=ZMAX-.001; $("zoomFit").disabled=S.zoom<=ZMIN+.001;
+}
+let zSave;
+function setZoom(z, cx, cy){
+  z=Math.min(ZMAX,Math.max(ZMIN,z));
+  if(Math.abs(z-S.zoom)<1e-4) return;
+  const vr=VP.getBoundingClientRect(), sr=ST.getBoundingClientRect();
+  if(cx==null){ cx=vr.left+VP.clientWidth/2; cy=vr.top+VP.clientHeight/2; }
+  const fx=(cx-sr.left)/sr.width, fy=(cy-sr.top)/sr.height;
+  S.zoom=z; applyZoom();
+  VP.scrollLeft=fx*ST.offsetWidth-(cx-vr.left);
+  VP.scrollTop=fy*ST.offsetHeight-(cy-vr.top);
+  clearTimeout(zSave); zSave=setTimeout(()=>{ try{localStorage.setItem("vz",S.zoom);}catch(e){} },300);
+}
+$("zoomIn").onclick=()=>setZoom(S.zoom*1.5);
+$("zoomOut").onclick=()=>setZoom(S.zoom/1.5);
+$("zoomFit").onclick=()=>setZoom(ZMIN);
+// trackpad pinch (Chrome, Edge, Firefox) and Ctrl/Cmd + scroll wheel
+VP.addEventListener("wheel",e=>{
+  if(!(e.ctrlKey||e.metaKey)) return;
+  e.preventDefault();
+  let dy=e.deltaMode===1 ? e.deltaY*40 : e.deltaY;
+  dy=Math.max(-50,Math.min(50,dy));
+  setZoom(S.zoom*Math.exp(-dy*0.004), e.clientX, e.clientY);
+},{passive:false});
+// two-finger pinch on phones and tablets
+let pinch=null;
+const tdist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+VP.addEventListener("touchstart",e=>{ if(e.touches.length===2){ pinch={d:tdist(e.touches[0],e.touches[1]), z:S.zoom}; } },{passive:true});
+VP.addEventListener("touchmove",e=>{
+  if(e.touches.length!==2||!pinch) return;
+  e.preventDefault();
+  const [a,b]=e.touches;
+  setZoom(pinch.z*tdist(a,b)/pinch.d,(a.clientX+b.clientX)/2,(a.clientY+b.clientY)/2);
+},{passive:false});
+VP.addEventListener("touchend",e=>{ if(e.touches.length<2) pinch=null; });
+// Safari trackpad pinch
+let gz=null;
+VP.addEventListener("gesturestart",e=>{ e.preventDefault(); gz=S.zoom; });
+VP.addEventListener("gesturechange",e=>{ e.preventDefault(); if(pinch||gz==null) return; setZoom(gz*e.scale,e.clientX,e.clientY); });
+VP.addEventListener("gestureend",e=>{ e.preventDefault(); gz=null; });
+// drag to pan with a mouse when zoomed in
+let drag=null, dragged=false;
+VP.addEventListener("pointerdown",e=>{
+  if(e.pointerType!=="mouse"||e.button!==0||S.zoom<=ZMIN+.001||e.target.closest(".pin")) return;
+  drag={x:e.clientX,y:e.clientY,l:VP.scrollLeft,t:VP.scrollTop}; dragged=false;
+});
+window.addEventListener("pointermove",e=>{
+  if(!drag) return;
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+  if(!dragged && Math.hypot(dx,dy)<4) return;
+  dragged=true; VP.classList.add("dragging");
+  VP.scrollLeft=drag.l-dx; VP.scrollTop=drag.t-dy;
+});
+window.addEventListener("pointerup",()=>{ if(!drag) return; drag=null; VP.classList.remove("dragging"); setTimeout(()=>{dragged=false;},0); });
+// double-click zooms in on that spot; at full zoom it fits the map again
+ST.addEventListener("dblclick",e=>{
+  if(S.mode!=="view"||e.target.closest(".pin")) return;
+  setZoom(S.zoom>=ZMAX-.001 ? ZMIN : S.zoom*2, e.clientX, e.clientY);
+});
+
+$("stage").addEventListener("click", e=>{
+  if(S.mode==="view"||dragged) return;
+  const r=$("stage").getBoundingClientRect();
+  const x=+((e.clientX-r.left)/r.width*100).toFixed(2), y=+((e.clientY-r.top)/r.height*100).toFixed(2);
+  if(S.mode==="add"){
+    S.draft={id:"p"+Date.now().toString(36), name:"", kind:"visited", notes:"", approx:false, x, y, order:Date.now(), _new:true};
+    S.sel=null; S.editing=true; S.mode="view"; render();
+  } else if(S.mode==="move"){
+    const p=S.pins.find(q=>q.id===S.sel); S.mode="view";
+    if(p){ p.x=x; p.y=y; write(p.id,{...strip(p)}); }
+    render();
+  }
+});
+
+function strip(p){ const {id,_new,...rest}=p; return rest; }
+async function savePin(p, fd){
+  const body={...strip(p), name:String(fd.get("name")).trim(), kind:fd.get("kind"), notes:String(fd.get("notes")).trim(), approx:fd.get("approx")==="on"};
+  if(!body.name){ S.msg="Give the pin a name first."; render(); return; }
+  const id=p.id;
+  if(!S.db){ const i=S.pins.findIndex(q=>q.id===id); const np={id,...body}; if(i>=0) S.pins[i]=np; else S.pins.push(np); }
+  S.draft=null; S.editing=false; S.sel=id; S.msg=""; render();
+  await write(id, body);
+}
+async function write(id, body){
+  if(!S.db) return;
+  try{ await S.db.collection("pins").doc(id).set({...body, updated:new Date().toISOString()}); }
+  catch(e){
+    if(e?.code==="invalid_argument"){ S.canWrite=false; S.msg="You can view this map, but only people with edit access can change pins."; }
+    else if(e?.code==="quota_exceeded"){ S.msg="The map is full. Delete a few pins before adding more."; }
+    else S.msg="That change didn't save. Try again in a moment.";
+    render();
+  }
+}
+async function removePin(p){
+  S.confirmDel=false; S.sel=null;
+  if(!S.db){ S.pins=S.pins.filter(q=>q.id!==p.id); render(); return; }
+  render();
+  try{ await S.db.collection("pins").doc(p.id).delete(); }catch(e){ S.msg="That pin couldn't be deleted. Try again in a moment."; render(); }
+}
+
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(S.mode!=="view") setMode("view"); else if(S.editing) cancelEdit(); }});
+
+render();
+
+(async()=>{
+  if(!window.claude?.use) { return; }
+  const db=await window.claude.use("db");
+  if(!db) return;
+  S.db=db; S.live=true; render();
+  try{ const u=await window.claude.use("user"); const w=u? await u.can("data.write"):null; if(w===false){ S.canWrite=false; render(); } }catch(e){}
+  db.collection("pins").onSnapshot(snap=>{
+    S.pins=snap.docs.map(d=>({id:d.id,...d.data()})); S.loaded=true;
+    if(S.sel && !S.pins.some(p=>p.id===S.sel)) S.sel=null;
+    render();
+  }, err=>{ S.msg="Pins stopped syncing. Reload the page to reconnect."; render(); });
+})();
+</script>
