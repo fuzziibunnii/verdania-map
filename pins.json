@@ -16,8 +16,8 @@
     "notes": "Camp of the Dawn Order knights (the Ravens) in the Whispering Wood: Knight Commander Rain and Marcus the Strong.\n\nThe night of Duarte's moon lantern ceremony. Watches and stories were shared, and Uther vanished before morning, presumably heading for Nixthara.",
     "order": 3,
     "step": 3,
-    "x": 73.4,
-    "y": 61.6,
+    "x": 68.85,
+    "y": 65.2,
     "id": "dawn-order-camp"
   },
   {
@@ -47,8 +47,8 @@
     "name": "Galdoria",
     "notes": "Coastal city in Aurion and home of the Rookery. Orville despised the Rookery, and it may be powered by a demon living beneath its tower. The tower's gazpacho door leads to the Rookery's Vault of Requisitions here.\n\nThe orc horde was last seen marching toward Galdoria.\n\nErrand: deliver Marcus's satchel to Penelope at the Sanguine Reliquary in the slums.",
     "order": 7,
-    "x": 73.6,
-    "y": 71.3,
+    "x": 81.98,
+    "y": 72.04,
     "id": "galdoria"
   },
   {
@@ -62,12 +62,12 @@
     "id": "new-verdan"
   },
   {
-    "approx": true,
+    "approx": false,
     "kind": "visited",
     "name": "Shadowfen Keep",
     "notes": "An ancient, dilapidated keep from the War of Shadows, near the edge of Old Verdantia and the Whispering Wood. You enter through a cave with a glowing green archway, and a ley line river runs through it. The Battle of Shadowfen Keep was also fought here during the First Korithic War.\n\nThe party freed the Wynvale prisoners and hid them nearby. Vrae charged the Stone in the river and lost 16 max HP for it. Marquis Harold Hale Von Corvus threw himself into the ley line, and the drow inquisitor escaped with the second Stone.\n\nStill unexplored: the door by the river, the north pit and stone door, and the green archway.\n\nThe party is here now.",
     "order": 6,
-    "step": 6,
+    "step": 7,
     "x": 60.2,
     "y": 65.2,
     "id": "shadowfen-keep"
@@ -79,9 +79,31 @@
     "notes": "Where it all began (the session notes spell the city Windvale). The party was inspecting three ancient artifacts, including the Stone of Gog, when an explosion destroyed the display case and the artifacts fell into a crater leading to the Underdark. At the same moment, orcs and masked men attacked the city. The orc army's insignia is a dagger through a snake. Survivors were taken to Shadowfen Keep.\n\nBook joined the party here. The merchant Finkel Beans is also from Wynvale.",
     "order": 1,
     "step": 1,
-    "x": 68.6,
-    "y": 67.2,
+    "x": 73.06,
+    "y": 67.62,
     "id": "silver-petal-hall"
+  },
+  {
+    "approx": true,
+    "kind": "visited",
+    "name": "The Meteor Crash Site (Slaad Crater)",
+    "notes": "Six hours into the Whispering Wood, on the way to Shadowfen Keep: a meteor about 103 feet tall in a crater roughly four miles across. Fires were still burning, and red worm-like tadpoles and humanoid figures moved through the holes.\n\nThey are Slaad from a plane called Vallabrimoire. They ate their last world and say many of their kind already walk among the people of this one. A central mass inside the crater seems to be teleporting more of them in.\n\nIllarion walked in disguised as a juvenile Slaad, with Evadne's Bardic Inspiration on his performance, and used the pen's Author's Decree to send them toward the orc army instead of passing travelers. Then the party ran.",
+    "order": 11,
+    "step": 6,
+    "x": 63.36,
+    "y": 66.38,
+    "id": "slaad-crater"
+  },
+  {
+    "approx": false,
+    "kind": "lead",
+    "name": "Starhaven",
+    "notes": "Where Pietro Dread Paruda, who the red masks call Duarte's brother, is waiting. His letter asks Duarte to come here, says he knows what Duarte did before Duarte does and whose blood bought him.\n\nAfter Evadne slit one masked man's throat at Shadowfen Keep, the red-cloaked woman leading them and the rest of the red masks teleported away. Illarion caught from the leader's mind that they were headed here.\n\nThe masks meant to bring Duarte to Pietro to be killed. The dead mask wore Duarte's own face.",
+    "order": 12,
+    "step": null,
+    "x": 58.5,
+    "y": 89,
+    "id": "star-haven"
   },
   {
     "approx": true,
@@ -90,8 +112,8 @@
     "notes": "Old Shadow Wars battlefield beneath the crater. Here the party:\n\u2022 fought the boneless undead\n\u2022 drove off the Oculi, a mass of ~50 floating eyes\n\u2022 found the ritual chamber with the black portal (\"the quickest way is through\")\n\u2022 freed and questioned the drow Uther Kirocathis (Golgothrak, Mantis Beatrix, Morithol)\n\u2022 lost a commoner and a noble to the Vorlith on the collapsing bridge\n\u2022 escaped past an ancient black dragon, possibly undead",
     "order": 2,
     "step": 2,
-    "x": 71.2,
-    "y": 69.4,
+    "x": 70.44,
+    "y": 67.25,
     "id": "underdark"
   },
   {
